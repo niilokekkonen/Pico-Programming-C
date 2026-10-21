@@ -146,7 +146,7 @@ int main()
         btn_1_prev_state = btn_1_cur_state;
         btn_2_prev_state = btn_2_cur_state; // Saving the results
         btn_3_prev_state = btn_3_cur_state;
-        printf("PWM LEVEL: %u\n", lvl);
+        printf("PWM LEVEL: %u\n", lvl); // Printing PWM level through COM port, with Debug Probe
         sleep_ms(10);
     }
 }
