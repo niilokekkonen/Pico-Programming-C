@@ -49,17 +49,14 @@ int main()
     uint led1_slice = pwm_gpio_to_slice_num(led1_pin); // Slice = 2
     uint led2_slice = pwm_gpio_to_slice_num(led2_pin); // Slice = 2
     uint led3_slice = pwm_gpio_to_slice_num(led3_pin); // Slice = 3
-    uint led1_channel = pwm_gpio_to_channel(led1_pin); // Chan = A
-    uint led2_channel = pwm_gpio_to_channel(led2_pin); // Chan = B
-    uint led3_channel = pwm_gpio_to_channel(led3_pin); // Chan = A
+
 
 
     // Initialize PWM on slices, and set channel lvls
-    pwm_init(led1_slice, &conf, false); // Initializing slice 2 only once
-    pwm_init(led3_slice, &conf, false); // Note: if changing pins, check the slices accordingly
-    pwm_set_chan_level(led1_slice, led1_channel, 0);
-    pwm_set_chan_level(led2_slice, led2_channel, 0);
-    pwm_set_chan_level(led3_slice, led3_channel, 0);
+    pwm_init(led1_slice, &conf, false);
+    pwm_init(led2_slice, &conf, false);
+    pwm_init(led3_slice, &conf, false); // Note: if changing pins, check the slices
+    set_leds(led1_pin, led2_pin, led3_pin, 0);
 
 
     // Init button pins
@@ -72,16 +69,16 @@ int main()
 
     // Initialize chosen serial port
     stdio_init_all();
-    // Init slices
+    // Start PWM
     pwm_set_enabled(led1_slice, true);
     pwm_set_enabled(led3_slice, true);
     while (1)
     {
         const uint16_t step = 15;
         // Check buttons
-        sw_2_cur_state = pressed(btn1_pin);
         sw_1_cur_state = pressed(btn2_pin);
         sw_0_cur_state = pressed(btn3_pin);
+        sw_2_cur_state = pressed(btn1_pin);
 
         // If SW2 is pressed and led is on, decrease brightness
         if (sw_2_cur_state && led_state)
@@ -89,9 +86,7 @@ int main()
             lvl = decrease_level(lvl, step);
             set_leds(led1_pin, led2_pin, led3_pin, lvl);
             // TEST -> printf("Pressed SW2 while LED is on\n");
-
         }
-
         // IF SW1 is pressed, and wasn't pressed
         if (sw_1_cur_state && !sw_1_prev_state)
         {
@@ -166,7 +161,7 @@ void SW1_toggle(uint led_state, uint level, uint led1_pin, uint led2_pin, uint l
     }
 }
 
-// increases 16 bit level, and returns it
+// Increases 16 bit level, and returns it
 uint16_t increase_level(uint16_t level, uint16_t step, uint16_t wrap)
 {
 
