@@ -2,6 +2,7 @@
 
 add_executable(assignment_1
         main.c
+        funcs.h
 )
 
 target_link_libraries(assignment_1
