@@ -156,7 +156,7 @@ void SW1_toggle(uint led_state, uint level, uint led1_pin, uint led2_pin, uint l
     }
     else
     {
-        set_leds(LED1_PIN, LED2_PIN, led3_pin, 0);
+        set_leds(led1_pin, led2_pin, led3_pin, 0);
     }
 }
 
