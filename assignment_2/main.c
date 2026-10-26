@@ -19,7 +19,7 @@ typedef enum
 {
     LED_ON,
     LED_OFF,
-} led_states; // Adjusting = twisting rotary knob
+} led_states;
 
 typedef enum
 {
@@ -27,6 +27,7 @@ typedef enum
     EVENT_CCW,
     EVENT_SW
 } io_events;
+
 void set_leds(uint led1_pin, uint led2_pin, uint led3_pin, uint level);
 uint16_t increase_level(uint16_t level, uint16_t step, uint16_t wrap);
 uint16_t decrease_level(uint16_t level, uint16_t step);
@@ -37,13 +38,13 @@ static queue_t rot_events; // Queue to store rotary events
 
 int main()
 {
-    // 32 bit mask to toggle LEDs, and buttons
+    // 32 bit masks to toggle LEDs, and buttons
     const uint32_t led_mask = (1u << LED1_PIN) | (1u << LED2_PIN) | (1u << LED3_PIN);
     const uint32_t btn_mask = (1u << ROT_A_PIN) | (1u << ROT_B_PIN) | (1u << ROTSW_PIN);
 
     // PWM variables
     const uint32_t clk_divider = 125;
-    const uint16_t top = 999; // Wrap with max value 2^16 - 1
+    const uint16_t top = 999; // Wrap
     uint16_t lvl = 500;
 
     // To keep track of states.
@@ -107,6 +108,7 @@ int main()
                 }
                 else
                 {
+                    // Else it is not accepted and is a bounce
                     accepted = false;
                 }
             }
@@ -118,7 +120,9 @@ int main()
             {
                 switch (current_state)
                 {
+
                     case LED_OFF:
+                        // rotary SW is pressed
                         if (rot_event == EVENT_SW)
                         {
                             current_state = LED_ON;
