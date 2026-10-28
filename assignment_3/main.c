@@ -22,12 +22,14 @@ static const uint8_t half_step_arr[STEPS_IN_SEQ] = {
 	0b1001, // A, D = 1. Step 8
 };
 
-typedef struct status
+// Stepper Motors Status
+typedef struct
 {
 	bool calibrated; // calibrated
 	uint32_t steps_per_rev;
 
 } status;
+
 static uint32_t take_step(uint32_t seq_index);
 uint32_t binary_map(uint8_t current_state);
 void check_status(const status *motor_status);
@@ -38,6 +40,7 @@ uint32_t calc_avg (uint32_t total, uint8_t count);
 int main(void)
 {
 	// Initializing OPTO fork, and stepper motor pins
+	stdio_init_all();
 	gpio_init(OPT_SENSOR_GPIO);
 	gpio_pull_up(OPT_SENSOR_GPIO);
 	gpio_init_mask(STEP_MOTOR_MASK);
@@ -45,9 +48,10 @@ int main(void)
 	gpio_set_dir(OPT_SENSOR_GPIO, GPIO_IN); // Opto fork is input
 	gpio_set_dir_out_masked(STEP_MOTOR_MASK); // Stepper motor mask is output.
 
-	uint32_t seq_index = 0; // Sequence index
-	status motor_status;
-
+	status motor_status = {.calibrated = false, .steps_per_rev = 0}; // Start the program with motor not calibrated.
+	check_status(&motor_status);
+	calibrate(&motor_status);
+	check_status(&motor_status);
 	return 0;
 }
 
@@ -59,6 +63,7 @@ static uint32_t take_step(uint32_t seq_index)
 	seq_index = (seq_index + 1) % STEPS_IN_SEQ; // Growing index, if i = 8 wrap to zero
 	uint32_t mapped_mask = binary_map(cur_state);
 	gpio_put_masked(STEP_MOTOR_MASK, mapped_mask);
+	sleep_ms(1);
 	return seq_index;
 }
 
@@ -84,6 +89,7 @@ uint32_t binary_map(const uint8_t current_state)
 	{
 		mapped_mask |= 1u << STEP_MOTOR_D;
 	}
+	// Return the combined mask
 	return mapped_mask;
 }
 
@@ -114,7 +120,7 @@ void calibrate(status *motor_status)
 		uint32_t steps_per_rev = 0;
 		uint32_t total_steps = 0;
 		uint32_t revolution_avg = 0;
-		bool prev_sensor_state = false;
+		bool prev_sensor_state = gpio_get(OPT_SENSOR_GPIO);
 		while (revolutions < 3)
 		{
 
@@ -145,10 +151,11 @@ void calibrate(status *motor_status)
 		revolution_avg = calc_avg(total_steps, revolutions);
 		motor_status->steps_per_rev = revolution_avg;
 		motor_status->calibrated = true;
+		printf("Revolution avg: %u\n", motor_status->steps_per_rev);
 	}
 }
 
-uint32_t calc_avg (uint32_t total, uint8_t count)
+uint32_t calc_avg (const uint32_t total, const uint8_t count)
 {
 	return total / count;
 }
