@@ -59,7 +59,7 @@ int main()
 
     // Init button pins
     gpio_init_mask(btn_mask);
-    gpio_set_dir_masked(btn_mask, 0);
+    gpio_set_dir_masked(btn_mask, GPIO_IN);
     // define buttons as pull up, Pressed = 0, released = 1 (hence pull up)
     gpio_pull_up(SW0_PIN);
     gpio_pull_up(SW1_PIN);

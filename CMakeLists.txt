@@ -26,4 +26,5 @@ add_compile_options(-Wall
 # Tell CMake where to find the executable source file(s)
 add_subdirectory(assignment_1)
 add_subdirectory(assignment_2)
+add_subdirectory(assignment_3)
 
