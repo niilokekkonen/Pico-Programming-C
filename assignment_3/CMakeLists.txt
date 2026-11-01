@@ -2,6 +2,8 @@
 
 add_executable(assignment_3
         main.c
+        functions.c
+        functions.h
 )
 
 target_link_libraries(assignment_3
