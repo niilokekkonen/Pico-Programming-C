@@ -27,4 +27,3 @@ add_compile_options(-Wall
 add_subdirectory(assignment_1)
 add_subdirectory(assignment_2)
 add_subdirectory(assignment_3)
-

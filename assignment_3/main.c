@@ -55,10 +55,10 @@ int main(void)
 				printf("Try status, calib, or run N (N is an integer)\n");
 				break;
 			case FAULTY_NUM:
-				printf("Faulty number\n");
+				printf("Faulty number\nTry to write the command exactly as show\n");
 				break;
 			case LINE_TOO_LONG:
-				printf("Line too long\n");
+				printf("Line too long\nShorter commands\n");
 				break;
 			case EMPTY_INPUT:
 				printf("Empty input\n");

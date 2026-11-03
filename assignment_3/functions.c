@@ -21,8 +21,6 @@ static const uint8_t half_step_arr[STEPS_IN_SEQ] = {
 	0b1001, // A, D = 1. Step 8
 };
 
-
-
 // Moves the motor one half step
 // updates + returns updated sequence index
 uint32_t take_step(uint32_t seq_index, uint8_t direction)
@@ -88,6 +86,7 @@ void calibrate(motor_state *motor_status, uint8_t direction)
 	uint32_t revolution_avg = 0;
 	bool prev_sensor_state = gpio_get(OPT_SENSOR_GPIO);
 	printf("Starting calibration\n");
+	// Measure for 1 'trigger' falling edge, and 3 'end measurement'
 	while (revolutions < 3)
 	{
 		seq_index = take_step(seq_index, direction); // Turning motor
@@ -97,24 +96,25 @@ void calibrate(motor_state *motor_status, uint8_t direction)
 			steps_per_rev++;
 		}
 		// If previous was high, and the current state is low = FALLING EDGE
-		if (prev_sensor_state && !cur_sensor_state)
+		if (FORK_FALLING_EDGE)
 		{
 			if (!measuring)
 			{
 				measuring = true;
-				steps_per_rev = 0;
 			}
-			else
+			else // Measuring = true
 			{
-				measuring = false;
 				total_steps += steps_per_rev;
+				steps_per_rev = 0;
 				revolutions++;
+				printf("steps: %u\n", total_steps);
 			}
 		}
 		prev_sensor_state = cur_sensor_state;
 	}
 	// Calculating average from 3 revolutions to get a more accurate result
 	revolution_avg = calc_avg(total_steps, revolutions);
+	printf("Total average: %u\n", revolution_avg);
 	motor_status->steps_per_rev = revolution_avg;
 	motor_status->calibrated = true;
 	motor_status->sequence_index = seq_index;
@@ -217,19 +217,20 @@ void empty_lf(void)
 cmd_parse_res_t valid_number(char *line_buffer, int offset, int *number)
 {
     char *end_ptr = &line_buffer[offset]; // Initial value
-    long read_number = 0;
+    long user_number = 0;
     if(rest_is_empty(&line_buffer[offset]))
     {
         *number = FULL_ROTATION; // command is just 'run', turn the motor by one revolution
         return OK;
     }
-    read_number = strtol(&line_buffer[offset], &end_ptr, 10);
+	 // Use strtol *end_ptr to see how the number is formatted
+    user_number = strtol(&line_buffer[offset], &end_ptr, 10);
     if (&line_buffer[offset] == end_ptr) return FAULTY_NUM; // Command = run xyz or similar
     if (rest_is_empty(end_ptr))
     {
-        if (read_number < 0 || read_number > MAX_N) return N_NOT_IN_RANGE;
-        *number = (int) read_number;
-        return OK;
+        if (user_number < 0 || user_number > MAX_N) return N_NOT_IN_RANGE;
+        *number = (int) user_number;
+        return OK; // command is 'run N', where N = integer
     }
-    return FAULTY_NUM;
+    return FAULTY_NUM; // Command is 'run 8abc' or similar = !(Rest_is_empty)
 }

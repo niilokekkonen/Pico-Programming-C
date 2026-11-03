@@ -26,6 +26,7 @@
 // 117 * (4096 / 8) * 1 = 59 904 ms, about 1 min
 #define MAX_N 117
 #define FULL_ROTATION 8 // 8/8 = full rotation
+#define FORK_FALLING_EDGE (prev_sensor_state && !cur_sensor_state)
 // Stepper Motors Data
 typedef struct
 {

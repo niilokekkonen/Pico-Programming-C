@@ -100,7 +100,7 @@ int main()
             {
                 uint32_t cur_press = time_us_32();
                 accepted = debounce_btn(cur_press, last_sw_press);
-                // Checking debounce, and SW pin incase of bouncing
+                // Checking debounce, and pin state to filter bouncing
                 if (accepted && !gpio_get(ROTSW_PIN))
                 {
                     last_sw_press = cur_press;
@@ -112,7 +112,7 @@ int main()
                     accepted = false;
                 }
             }
-            const uint16_t step = 15;
+            const uint16_t step = 25;
             // Check buttons
             // Switch case for states
             // STATES = OFF, ON
@@ -162,7 +162,7 @@ int main()
             }
 
             }
-            // TEST -> printf("PWM LEVEL: %u\n", lvl);
+            printf("PWM LEVEL: %u\n", lvl);
         }
         sleep_ms(10);
     }
