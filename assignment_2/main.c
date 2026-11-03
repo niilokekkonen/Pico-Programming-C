@@ -28,11 +28,11 @@ typedef enum
     EVENT_SW
 } io_events;
 
-void set_leds(uint led1_pin, uint led2_pin, uint led3_pin, uint level);
-uint16_t increase_level(uint16_t level, uint16_t step, uint16_t wrap);
-uint16_t decrease_level(uint16_t level, uint16_t step);
-void isr_handler(uint gpio, uint32_t events);
-bool debounce_btn(uint32_t cur_time, uint32_t prev_accept_time);
+static void set_leds(uint led1_pin, uint led2_pin, uint led3_pin, uint level);
+static uint16_t increase_level(uint16_t level, uint16_t step, uint16_t wrap);
+static uint16_t decrease_level(uint16_t level, uint16_t step);
+static void isr_handler(uint gpio, uint32_t events);
+static bool debounce_btn(uint32_t cur_time, uint32_t prev_accept_time);
 
 static queue_t rot_events; // Queue to store rotary events
 
@@ -112,12 +112,12 @@ int main()
                     accepted = false;
                 }
             }
-            const uint16_t step = 25;
             // Check buttons
             // Switch case for states
             // STATES = OFF, ON
             if (accepted)
             {
+                const uint16_t step = 25;
                 switch (current_state)
                 {
 
@@ -169,24 +169,11 @@ int main()
 }
 
 // Set level on 3 LEDs
-void set_leds(uint led1_pin, uint led2_pin, uint led3_pin, uint level)
+static void set_leds(uint led1_pin, uint led2_pin, uint led3_pin, uint level)
 {
     pwm_set_gpio_level(led1_pin, level);
     pwm_set_gpio_level(led2_pin, level);
     pwm_set_gpio_level(led3_pin, level);
-}
-
-// Toggles LEDs when SW 1 is pressed
-void rot_sw_toggle(uint led_state, uint level, uint led1_pin, uint led2_pin, uint led3_pin)
-{
-    if (led_state == 1)
-    {
-        set_leds(led1_pin, led2_pin, led3_pin, level);
-    }
-    else
-    {
-        set_leds(led1_pin, led2_pin, led3_pin, 0);
-    }
 }
 
 // Increases 16 bit level, and returns it
