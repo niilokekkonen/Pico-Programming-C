@@ -17,7 +17,7 @@ int main(void)
 	motor_state motor_status = {
 		.calibrated = false,
 		.steps_per_rev = 0,
-		.direction = MOTOR_CW,
+		.direction = MOTOR_CCW,
 		.sequence_index = 0
 	}; // Start the program with motor not calibrated.
 	print_start();
@@ -55,7 +55,7 @@ int main(void)
 				printf("Try status, calib, or run N (N is an integer)\n");
 				break;
 			case FAULTY_NUM:
-				printf("Faulty number\nTry to write the command exactly as show\n");
+				printf("Faulty number\nTry to write the command like this (run 8)\n");
 				break;
 			case LINE_TOO_LONG:
 				printf("Line too long\nShorter commands\n");

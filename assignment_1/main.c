@@ -17,7 +17,7 @@ static void set_leds(uint led1_pin, uint led2_pin, uint led3_pin, uint level);
 static uint16_t increase_level(uint16_t level, uint16_t step, uint16_t wrap);
 static uint16_t decrease_level(uint16_t level, uint16_t step);
 
-int main()
+int main(void)
 {
     // 32 bit mask to toggle LEDs, and buttons
     const uint32_t led_mask = (1u << LED1_PIN) | (1u << LED2_PIN) | (1u << LED3_PIN);
@@ -25,7 +25,7 @@ int main()
 
     // PWM variables
     const uint32_t clk_divider = 125;
-    const uint16_t top = 999; // Wrap with max value 2^16 - 1
+    const uint16_t top = 999;
     uint16_t lvl = 500;
 
     // To keep track of pressing
