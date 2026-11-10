@@ -186,32 +186,21 @@ void isr_handler(uint gpio, uint32_t events)
 	{
 		uint32_t cur_press = time_us_32();
 		event = EVENT_SW;
-		if (events & GPIO_IRQ_EDGE_FALL)
+		if (events & GPIO_IRQ_EDGE_FALL) // IF event is falling edge, the button is pressed
 		{
 			bool accepted = debounce_btn(cur_press, last_sw_press);
-			if (accepted)
-			{
-				queue_try_add(&rot_events, &event);
+			if (accepted) queue_try_add(&rot_events, &event);
 				// Accepted = true
-			}
-			else
-			{
-				// Else it is not accepted and is a bounce
-				accepted = false;
-			}
+			else accepted = false;
+			// Else it is not accepted and is a bounce
 		}
 		last_sw_press = cur_press;
 	}
 	if (gpio == ROT_A_PIN)
 	{
-		if (gpio_get(ROT_B_PIN))
-		{
-			event = EVENT_CCW;
-		}
-		else
-		{
-			event = EVENT_CW;
-		}
+		if (gpio_get(ROT_B_PIN)) event = EVENT_CCW;
+		else event = EVENT_CW;
+
 		queue_try_add(&rot_events, &event);
 	}
 }
