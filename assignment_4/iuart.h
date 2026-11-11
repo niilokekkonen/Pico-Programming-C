@@ -4,7 +4,7 @@
 
 #ifndef UART_IRQ_UART_H
 #define UART_IRQ_UART_H
-
+#include <stdint.h>
 
 void iuart_setup(int uart_nr, int tx_pin, int rx_pin, int speed);
 int iuart_read(int uart_nr, uint8_t *buffer, int size);

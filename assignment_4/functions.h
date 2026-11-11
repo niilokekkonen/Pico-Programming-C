@@ -10,14 +10,14 @@
 
 #define BITRATE 9600
 #define UART_TIMEOUT 500000 // 500 ms
-static const char *LORA_TEST_CMD = "AT\n";
-
+#define BTN_SLEEP_TIME = 30;
 typedef enum
 {
-	SEND_CMD,
-	RECV_CMD,
-	TIMEOUT_CMD,
-}UART_STATES;
+	WAIT_FOR_BTN,
+	AT_TEST,
+	VERSION,
+	DEVEUI
+} UART_STATES;
 
 
 typedef enum
@@ -27,5 +27,6 @@ typedef enum
 	PARSE_OVERFLOW // char array overflows
 } parse_result;
 
-parse_result parse_string();
-void init_uart1();
+parse_result parse_string(char *str_buf, int buf_size, uint32_t timeout_us);
+bool button_pressed(int btn_pin, int sleep_time_ms);
+void flush_uart(int uart_nr);

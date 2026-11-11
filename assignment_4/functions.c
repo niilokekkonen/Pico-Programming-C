@@ -20,7 +20,7 @@ parse_result parse_string(char *str_buf, const int buf_size, uint32_t timeout_us
 		if (got_byte == 1)
 		{
 			if (char_from_queue == '\n') line_done = true; // Encounter end
-			else if (char_from_queue == '\r') {}
+			else if (char_from_queue == '\r') {} // don't add CR to buffer
 			else
 			{
 				str_buf[index] = char_from_queue; // each character is one byte aka one element.
@@ -34,4 +34,38 @@ parse_result parse_string(char *str_buf, const int buf_size, uint32_t timeout_us
 	else if (index == buf_size - 1) result = PARSE_OVERFLOW;
 	else result = PARSE_TIMEOUT;
 	return result;
+}
+
+// Initialize btn_pin as output pin
+void init_button(int btn_pin)
+{
+	gpio_init(btn_pin);
+	gpio_set_dir(btn_pin, GPIO_IN);
+	gpio_pull_up(btn_pin);
+}
+
+
+// Pull up resistor logic. Check button, and debounce
+// Takes btn pin, and how long to sleep in debounce
+bool button_pressed(int btn_pin, int sleep_time_ms)
+{
+	if (!gpio_get(btn_pin))
+	{
+		sleep_ms(sleep_time_ms);
+		if (!gpio_get(btn_pin))
+		{
+			while (!gpio_get(btn_pin)) sleep_ms(10); // Wait for release
+			return true;
+		}
+		return false;
+	}
+	// BTN not pressed
+	return false;
+}
+
+// Flushes uart RX queue
+void flush_uart(int uart_nr)
+{
+	uint8_t discarded_byte; // temporary var for discarding the bytes
+	while (iuart_read(uart_nr, &discarded_byte, 1)) ;
 }
