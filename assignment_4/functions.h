@@ -30,3 +30,4 @@ typedef enum
 parse_result parse_string(char *str_buf, int buf_size, uint32_t timeout_us);
 bool button_pressed(int btn_pin, int sleep_time_ms);
 void flush_uart(int uart_nr);
+bool wait_for_line(char *prefix, int timeout_us, char *str_buf, int buf_size);
