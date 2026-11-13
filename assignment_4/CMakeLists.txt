@@ -2,6 +2,8 @@
 
 add_executable(assignment_4
         main.c
+        iuart.c
+        iuart.h
         functions.c
         functions.h
 )

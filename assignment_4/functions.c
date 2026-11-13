@@ -1,5 +1,7 @@
 #include "functions.h"
 #include "iuart.h"
+#include <ctype.h>
+#define START_POINT "DevEui, "
 
 // Reads characters through UART
 // Converts them to strings, reads string or timeout occurs
@@ -42,7 +44,7 @@ parse_result parse_string(char *str_buf, const int buf_size, uint32_t timeout_us
 	return result;
 }
 
-// Initialize btn_pin as output pin
+// Initialize btn_pin as input pin
 void init_button(int btn_pin)
 {
 	gpio_init(btn_pin);
@@ -66,8 +68,7 @@ bool button_pressed(int btn_pin, int sleep_time_ms)
 		}
 		return false;
 	}
-	// BTN not pressed
-	return false;
+	return false; // BTN not pressed
 }
 
 // Flushes uart RX queue
@@ -80,7 +81,7 @@ void flush_uart(int uart_nr)
 // Returns true when a line was successfully read
 // Else false
 // Looks for *prefix from string
-bool wait_for_line(char *prefix, uint32_t timeout_us, char *str_buf, int buf_size)
+bool wait_for_line(const char *prefix, uint32_t timeout_us, char *str_buf, int buf_size)
 {
 	uint32_t t = time_us_32();
 	uint32_t elapsed = 0;
@@ -100,11 +101,33 @@ bool wait_for_line(char *prefix, uint32_t timeout_us, char *str_buf, int buf_siz
 // Cleans RX Queue, then sends cmd to LoRa module
 // Waits timeout_us amount for response
 // Returns true if got response else false.
-bool send_and_wait(int uart_nr, char *cmd, char *prefix, char *buf, int size, uint32_t timeout_us)
+bool send_and_wait(int uart_nr, const char *cmd, const char *prefix, char *buf, int size, uint32_t timeout_us)
 {
-	bool got_response = false;
-	flush_uart(uart_nr);
+	flush_uart(uart_nr); // flushing RX queue
 	iuart_send(uart_nr, cmd);
-	got_response = wait_for_line(prefix, timeout_us, buf, size); // waiting up to 500 ms
-	return got_response;
+	return wait_for_line(prefix, timeout_us, buf, size);
+}
+// Parses deveui from result of LoRa module
+// Returns true if parsing was successfull, else false
+bool parse_deveui(const char *line, char *out)
+{
+	char *ptr_to_start = strstr(line, START_POINT);
+	int devui_start_point = strlen(START_POINT);
+	int i = 0;
+	if (ptr_to_start != NULL)
+	{
+		ptr_to_start += devui_start_point;
+		while (*ptr_to_start != '\0' && i < 16)
+		{
+			if (*ptr_to_start != ':')
+			{
+				out[i] = tolower((unsigned char)*ptr_to_start);
+				i++;
+			}
+			ptr_to_start++;
+		}
+		out[i] = '\0';
+		return true;
+	}
+	return false;
 }
