@@ -9,7 +9,7 @@ int main(void)
 	UART_STATES state = WAIT_FOR_BTN;
 	stdio_init_all();
 	init_button(SW0_PIN);
-	iuart_setup(UART_NR, UART_TX_PIN, UART_RX_PIN, BITRATE);
+	iuart_setup(UART_NR, UART_TX_PIN, UART_RX_PIN, UART_BITRATE);
 	char string_buffer[STR_BFR_SIZE] = {0};
 	char deveui_bfr[17] = {0};
 	uint8_t attempts = 0;

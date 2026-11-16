@@ -9,7 +9,7 @@
 #define UART_RX_PIN 5
 #define SW0_PIN 9
 
-#define BITRATE 9600
+#define UART_BITRATE 9600
 #define UART_TIMEOUT 500000 // 500 ms
 #define BTN_DEBOUNCE_MS 30 // For btn debounce
 #define AT_TEST_CMD "AT\r\n"
