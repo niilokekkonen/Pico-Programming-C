@@ -7,7 +7,8 @@
 #define I2C0_SCL_PIN 17
 #define I2C_BITRATE_HZ (100 * 1000)
 #define EEPROM_ADDR 0x50
-#define EEPROM_SIZE 32768 // Bytes
+#define EEPROM_BYTES 32768 // Bytes
+#define EEPROM_PAGESIZE 64
 #define W_DATA_ARR_LEN 3
 #define R_ADDR_LEN 2
 #define READ_LEN 1
@@ -19,3 +20,4 @@ bool read_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *r
 void setup_i2c(i2c_inst_t *i2c, uint bitrate, uint8_t sda, uint8_t scl);
 bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *dest_arr, size_t dest_len);
 bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len);
+void test_functions(void);
