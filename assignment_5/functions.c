@@ -42,9 +42,9 @@ bool read_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *r
 // Saves read data to dest_arr[dest_len], dest_len = amount of bytes to read
 bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *dest_arr, size_t dest_len)
 {
+	if (dest_arr == NULL)	return false; // Necessary safety measures
 	if (dest_len == 0)	return false;
 	if ((uint32_t) r_addr + dest_len > EEPROM_SIZE) return false;
-	if (dest_arr == NULL)	return false; // Necessary safety measures
 	uint8_t msb = r_addr >> 8;
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t addr_buf[R_ADDR_LEN] = {msb, lsb};
@@ -52,4 +52,21 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection
 	int read_vals = i2c_read_blocking(i2c, device_addr, dest_arr, dest_len, false);
 	return (size_t) read_vals == dest_len;
+}
+
+
+// Writes n amount of bytes to EEPROM through I2C, src_len = amount of bytes
+// Returns true if write was successful
+// Returns false if writing stops abruptly, src_arr is NULL or len is zero
+// Writes values from src_arr to EEPROM
+bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len)
+{
+	if (src_arr == NULL)	return false; // Necessary safety measures
+	if (src_len == 0)	return false;
+	if ((uint32_t) w_addr + src_len > EEPROM_SIZE) return false;
+	for (size_t i = 0; i < src_len; i++)
+	{
+		if (!write_byte(i2c, device_addr, (uint16_t) (w_addr + i), src_arr[i])) return false;
+	}
+	return true;
 }
