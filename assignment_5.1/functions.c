@@ -12,6 +12,29 @@ void setup_i2c(i2c_inst_t *i2c, uint bitrate, uint8_t sda_pin, uint8_t scl_pin)
 	gpio_set_function(scl_pin, GPIO_FUNC_I2C);
 }
 
+// Inits GPIO pins as output
+void init_leds(uint32_t led_mask)
+{
+	// Initialize LED pins with mask
+	gpio_init_mask(led_mask);
+	gpio_set_dir_masked(led_mask, led_mask);
+}
+
+// Inits GPIO pins as pull_up input
+void init_buttons(uint32_t btn_mask)
+{
+	gpio_init_mask(btn_mask);
+	gpio_set_dir_in_masked(btn_mask);
+	pull_up();
+}
+// Pulls up 3 GPIO pins
+void pull_up(void)
+{
+	gpio_pull_up(SW0_PIN);
+	gpio_pull_up(SW1_PIN);
+	gpio_pull_up(SW2_PIN);
+}
+
 // writes a byte to EEPROM through I2C
 // Returns true if byte was written, else false
 bool write_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, uint8_t w_data)
@@ -56,54 +79,28 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 	return (size_t) read_vals == dest_len;
 }
 
-/*
+// Pull up resistor logic. Check button, and debounce
+// Takes btn pin, and how long to sleep in debounce
+// Returns true when button is pressed, else false
+bool button_pressed(int btn_pin, int sleep_time_ms)
+{
+	if (!gpio_get(btn_pin))
+	{
+		sleep_ms(sleep_time_ms);
+		if (!gpio_get(btn_pin))
+		{
+			while (!gpio_get(btn_pin)) sleep_ms(10); // Wait for release
+			return true;
+		}
+		return false;
+	}
+	return false; // BTN not pressed
+}
+
 // Writes n amount of bytes to EEPROM through I2C, src_len = amount of bytes
 // Returns true if write was successful
 // Returns false if writing stops abruptly, src_arr is NULL or len is zero
 // Writes values from src_arr to EEPROM
-bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len)
-{
-	if (src_arr == NULL)	return false; // Necessary safety measures
-	if (src_len == 0)	return false;
-	if ((uint32_t) w_addr + src_len > EEPROM_BYTES) return false;
-	for (size_t i = 0; i < src_len; i++)
-	{
-		if (!write_byte(i2c, device_addr, (uint16_t) (w_addr + i), src_arr[i])) return false;
-	}
-	return true;
-}
-*/
-// Runs all the different functions.
-void test_functions(void)
-{
-	uint8_t read_val = 0;
-	uint8_t write_val = 0x5A; // 0101 1010
-	uint8_t write_val2 = 0x7F; // 0111 1111
-	uint8_t write_bytes[3] = {0x5F, 0x67, 0xFF};
-	uint8_t byte_buffer[EEPROM_BYTES] = {0};
-	stdio_init_all();
-	uint16_t r_w_addr = 0x1234; // Ranges from 0x0000 -> 07FFF
-	uint16_t write_n_addr = 0x3345;
-	setup_i2c(i2c0, I2C_BITRATE_HZ, I2C0_SDA_PIN, I2C0_SCL_PIN);
-	sleep_ms(100);
-	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val)) printf("Succesfully wrote data\n");
-	else printf("Failed to write data\n");
-	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02x\n", read_val);
-	else printf("Failed to read data!\n");
-	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val2)) printf("Succesfully wrote data\n");
-	else printf("Failed to write data\n");
-	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02x\n", read_val);
-	else printf("Failed to read data!\n");
-	if (write_n_bytes(i2c0, EEPROM_ADDR,write_n_addr, write_bytes, 3)) printf("Successfully written data\n");
-	else printf("Failed to write data\n");
-	if (read_n_bytes(i2c0, EEPROM_ADDR, write_n_addr, byte_buffer,3)) printf("Successfully read data\nRead value1: %0X\nRead value2: %0X\n", byte_buffer[0],byte_buffer[1]);
-	else printf("Failed to read data!\n");
-	while (true)
-	{
-		sleep_ms(100);
-	}
-}
-
 bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len)
 {
 	if (src_arr == NULL)	return false; // Necessary safety measures
@@ -128,3 +125,54 @@ bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const 
 	}
 	return true;
 }
+
+// sets led_state in struct
+void set_led_state(ledstate *ls, uint8_t value)
+{
+	ls->state = value;
+	ls->not_state = ~value;
+}
+
+// Checks ledstate from ledstate struct
+bool led_state_is_valid(ledstate *ls)
+{
+	return ls->state == (uint8_t) ~ls->not_state;
+}
+
+// Sets the leds on from the led_state byte, led_count = amount of leds in the byte
+// Uses pull_up resistor logic
+void set_leds(uint8_t led_state, uint8_t led_count)
+{
+	for (int i = 0; i < led_count; i++)
+	{
+		uint8_t new_bit = (led_state >> i) & 1;
+		gpio_put(LED_START + i, !new_bit);
+	}
+}
+
+// Runs all the different eeprom functions.
+void test_eeprom_functions(void)
+{
+	uint8_t read_val = 0;
+	uint8_t write_val = 0x5A; // 0101 1010
+	uint8_t write_val2 = 0x7F; // 0111 1111
+	uint8_t write_bytes[3] = {0x5F, 0x67, 0xFF};
+	uint8_t byte_buffer[64] = {0};
+	uint16_t r_w_addr = 0x1234; // Ranges from 0x0000 -> 07FFF
+	uint16_t write_n_addr = 0x3345;
+	setup_i2c(i2c0, I2C_BITRATE_HZ, I2C0_SDA_PIN, I2C0_SCL_PIN);
+	sleep_ms(100);
+	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val)) printf("Succesfully wrote data\n");
+	else printf("Failed to write data\n");
+	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02X\n", read_val);
+	else printf("Failed to read data!\n");
+	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val2)) printf("Succesfully wrote data\n");
+	else printf("Failed to write data\n");
+	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02X\n", read_val);
+	else printf("Failed to read data!\n");
+	if (write_n_bytes(i2c0, EEPROM_ADDR,write_n_addr, write_bytes, 3)) printf("Successfully written data\n");
+	else printf("Failed to write data\n");
+	if (read_n_bytes(i2c0, EEPROM_ADDR, write_n_addr, byte_buffer,3)) printf("Successfully read data\nRead value1: %0X\nRead value2: %02X\n", byte_buffer[0],byte_buffer[1]);
+	else printf("Failed to read data!\n");
+}
+

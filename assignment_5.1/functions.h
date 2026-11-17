@@ -5,19 +5,43 @@
 
 #define I2C0_SDA_PIN 16
 #define I2C0_SCL_PIN 17
-#define I2C_BITRATE_HZ (100 * 1000)
+#define I2C_BITRATE_HZ (100 * 1000) // 100 kHz
 #define EEPROM_ADDR 0x50
-#define EEPROM_BYTES 32768 // Bytes
-#define EEPROM_PAGESIZE 64
+#define EEPROM_BYTES 32768 // bytes
+#define EEPROM_PAGESIZE 64 // bytes
 #define W_DATA_ARR_LEN 3
 #define R_ADDR_LEN 2
 #define READ_LEN 1
 #define WR_SLEEP_TIME_MS 5
+// Button pins
+#define SW0_PIN 9
+#define SW1_PIN 8
+#define SW2_PIN 7
+#define BTN_MASK (1 << (SW0_PIN) | 1<<(SW1_PIN) | 1 << (SW2_PIN))
+// LED pins
+#define LED1_PIN 20
+#define LED2_PIN 21
+#define LED3_PIN 22
+#define LED_MASK (1 << (LED1_PIN) | (1 << LED2_PIN) | (1 << LED3_PIN))
+#define LED_START LED1_PIN // Start point for leds, to calculate led position for set_leds
 
+typedef struct ledstate {
+ uint8_t state;
+ uint8_t not_state;
+} ledstate;
 
 bool write_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, uint8_t w_data);
 bool read_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *r_data);
-void setup_i2c(i2c_inst_t *i2c, uint bitrate, uint8_t sda, uint8_t scl);
 bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *dest_arr, size_t dest_len);
 bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len);
-void test_functions(void);
+bool button_pressed(int btn_pin, int sleep_time_ms);
+bool led_state_is_valid(ledstate *ls);
+
+void set_leds(uint8_t led_state, uint8_t led_count);
+void set_led_state(ledstate *ls, uint8_t value);
+void setup_i2c(i2c_inst_t *i2c, uint bitrate, uint8_t sda, uint8_t scl);
+void pull_up(void);
+void init_buttons(uint32_t btn_mask);
+void init_leds(uint32_t led_mask);
+void test_eeprom_functions(void);
+

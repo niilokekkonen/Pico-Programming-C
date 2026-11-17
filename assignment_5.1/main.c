@@ -4,5 +4,8 @@
 
 int main(void)
 {
-	test_functions();
+	ledstate state_of_LEDS;
+	stdio_init_all();
+	test_eeprom_functions();
+	printf("Size of struct %d" , sizeof(state_of_LEDS));
 }
