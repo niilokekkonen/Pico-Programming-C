@@ -2,10 +2,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "hardware/i2c.h"
-
+// I2C constants
 #define I2C0_SDA_PIN 16
 #define I2C0_SCL_PIN 17
 #define I2C_BITRATE_HZ (100 * 1000) // 100 kHz
+// EEPROM constants
 #define EEPROM_ADDR 0x50 // EEPROM device address
 // The largest possible address to store led state with 2 bytes
 // EEPROM address range from 0x0000 -> 0x7FFF
@@ -16,19 +17,20 @@
 #define R_ADDR_LEN 2
 #define READ_LEN 1
 #define WR_SLEEP_TIME_MS 5
-// Button pins
+// Button constants
 #define SW0_PIN 9
 #define SW1_PIN 8
 #define SW2_PIN 7
 #define BTN_MASK (1u << (SW0_PIN) | 1u <<(SW1_PIN) | 1u << (SW2_PIN))
 #define BTN_COUNT 3
 #define BTN_DEBOUNCE_MS 50
-// LED pins
+// LED constants
 #define LED1_PIN 20
 #define LED2_PIN 21
 #define LED3_PIN 22
 #define LED_MASK (1u << (LED1_PIN) | (1u << LED2_PIN) | (1u << LED3_PIN))
 #define LED_START LED1_PIN // Start point for leds, to calculate led position for set_leds
+#define LED_COUNT 3
 
 typedef struct ledstate
 {

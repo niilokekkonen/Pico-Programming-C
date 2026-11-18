@@ -162,13 +162,16 @@ bool save_led_state(uint8_t led_state)
 	return false;
 }
 
+// Initializes button state
 void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms)
 {
 	btn->btn_pin = pin;
 	btn->last_accepted_time_us = time_us_32() - debounce_ms * 1000;
 	btn->last_state = true; // Not pressed
 }
-
+// Checks if buttons current state, previous state and debounce
+// Returns true if press is accepted
+// else false
 bool button_pressed(button *btn, uint32_t debounce_ms)
 {
 	bool cur_state = gpio_get(btn->btn_pin);
@@ -180,7 +183,7 @@ bool button_pressed(button *btn, uint32_t debounce_ms)
 	return !cur_state;
 }
 
-// Runs all the different eeprom functions.
+// Runs write/read byte, and write/read_n_bytes. For testing
 void test_eeprom_functions(void)
 {
 	uint8_t read_val = 0;
