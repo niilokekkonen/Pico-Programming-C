@@ -100,9 +100,9 @@ bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const 
 		memcpy(data_chunk + 2, src_arr, chunk_size);
 		// chunk_size + 2 is for the msb/lsb
 		int bytes_written = i2c_write_blocking(i2c, device_addr, data_chunk, chunk_size + 2, false);
-		if ((uint8_t) bytes_written != chunk_size + 2) return false;
+		if ((size_t) bytes_written != chunk_size + 2) return false;
 		sleep_ms(WR_SLEEP_TIME_MS);
-		src_len -= chunk_size; // Lower src_length
+		src_len -= chunk_size;
 		w_addr += chunk_size;
 		src_arr += chunk_size;
 	}
@@ -121,16 +121,33 @@ bool led_state_is_valid(ledstate *ls)
 {
 	return ls->state == (uint8_t) ~ls->not_state;
 }
-
-
-// Uses pull_up resistor logic
+// Sets GPIO pins according to led_state variable
 void set_leds(uint8_t led_state, uint8_t led_count)
 {
 	for (int i = 0; i < led_count; i++)
 	{
 		uint8_t new_bit = (led_state >> i) & 1;
-		gpio_put(LED_START + i, !new_bit);
+		gpio_put(LED_START + i, new_bit);
 	}
+}
+// Loads LED state from EEPROM to *led_state
+// Returns true if successfully read the LED state
+// else false
+bool load_led_state(uint8_t *led_state)
+{
+	ledstate temp_state;
+	bool read_ok = read_n_bytes(i2c0, EEPROM_ADDR, LED_STATE_ADDR, (uint8_t *) &temp_state, sizeof(temp_state));
+	if (read_ok)
+	{
+		bool valid_state = led_state_is_valid(&temp_state);
+		if (valid_state)
+		{
+			*led_state = temp_state.state & 0x07; // Leave the last three bits to the result
+			return true;
+		}
+		return false;
+	}
+	return false;
 }
 
 void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms)
@@ -161,7 +178,6 @@ void test_eeprom_functions(void)
 	uint8_t byte_buffer[64] = {0};
 	uint16_t r_w_addr = 0x1234; // Ranges from 0x0000 -> 07FFF
 	uint16_t write_n_addr = 0x3345;
-	setup_i2c(i2c0, I2C_BITRATE_HZ, I2C0_SDA_PIN, I2C0_SCL_PIN);
 	sleep_ms(100);
 	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val)) printf("Succesfully wrote data\n");
 	else printf("Failed to write data\n");
@@ -176,4 +192,6 @@ void test_eeprom_functions(void)
 	if (read_n_bytes(i2c0, EEPROM_ADDR, write_n_addr, byte_buffer,3)) printf("Successfully read data\nRead value1: %02X\nRead value2: %02X\n", byte_buffer[0],byte_buffer[1]);
 	else printf("Failed to read data!\n");
 }
+
+
 

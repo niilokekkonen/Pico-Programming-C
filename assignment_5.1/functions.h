@@ -6,7 +6,8 @@
 #define I2C0_SDA_PIN 16
 #define I2C0_SCL_PIN 17
 #define I2C_BITRATE_HZ (100 * 1000) // 100 kHz
-#define EEPROM_ADDR 0x50
+#define EEPROM_ADDR 0x50 // EEPROM device address
+#define LED_STATE_ADDR 0x7FFE // The largest possible address to store led state with 2 bytes
 #define EEPROM_BYTES 32768 // bytes
 #define EEPROM_PAGESIZE 64 // bytes
 #define W_DATA_ARR_LEN 3
@@ -17,14 +18,14 @@
 #define SW0_PIN 9
 #define SW1_PIN 8
 #define SW2_PIN 7
-#define BTN_MASK (1 << (SW0_PIN) | 1<<(SW1_PIN) | 1 << (SW2_PIN))
+#define BTN_MASK (1u << (SW0_PIN) | 1u <<(SW1_PIN) | 1u << (SW2_PIN))
 #define BTN_COUNT 3
 #define BTN_DEBOUNCE_MS 50
 // LED pins
 #define LED1_PIN 20
 #define LED2_PIN 21
 #define LED3_PIN 22
-#define LED_MASK (1 << (LED1_PIN) | (1 << LED2_PIN) | (1 << LED3_PIN))
+#define LED_MASK (1u << (LED1_PIN) | (1u << LED2_PIN) | (1u << LED3_PIN))
 #define LED_START LED1_PIN // Start point for leds, to calculate led position for set_leds
 
 typedef struct ledstate
@@ -46,6 +47,7 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len);
 bool button_pressed(button *btn, uint32_t debounce_ms);
 bool led_state_is_valid(ledstate *ls);
+bool load_led_state();
 
 void set_leds(uint8_t led_state, uint8_t led_count);
 void set_led_state(ledstate *ls, uint8_t value);

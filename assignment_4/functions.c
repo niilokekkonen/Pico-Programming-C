@@ -58,16 +58,18 @@ void init_button(int btn_pin)
 // Returns true when button is pressed, else false
 bool button_pressed(int btn_pin, int sleep_time_ms)
 {
-	if (!gpio_get(btn_pin))
+	static bool prev_state = true;
+	bool cur_state = gpio_get(btn_pin);
+	if (prev_state && !cur_state)
 	{
 		sleep_ms(sleep_time_ms);
 		if (!gpio_get(btn_pin))
 		{
-			while (!gpio_get(btn_pin)) sleep_ms(10); // Wait for release
+			prev_state = cur_state;
 			return true;
 		}
-		return false;
 	}
+	prev_state = cur_state;
 	return false; // BTN not pressed
 }
 
