@@ -150,6 +150,18 @@ bool load_led_state(uint8_t *led_state)
 	return false;
 }
 
+// Saves led_state to EEPROM
+// Returns true if succesfull
+// Else false
+bool save_led_state(uint8_t led_state)
+{
+	ledstate temp_stat;
+	set_led_state(&temp_stat, led_state);
+	bool write_ok = write_n_bytes(i2c0, EEPROM_ADDR, LED_STATE_ADDR, (uint8_t *) &temp_stat, sizeof(temp_stat));
+	if (write_ok) return true;
+	return false;
+}
+
 void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms)
 {
 	btn->btn_pin = pin;

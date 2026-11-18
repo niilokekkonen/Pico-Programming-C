@@ -7,7 +7,9 @@
 #define I2C0_SCL_PIN 17
 #define I2C_BITRATE_HZ (100 * 1000) // 100 kHz
 #define EEPROM_ADDR 0x50 // EEPROM device address
-#define LED_STATE_ADDR 0x7FFE // The largest possible address to store led state with 2 bytes
+// The largest possible address to store led state with 2 bytes
+// EEPROM address range from 0x0000 -> 0x7FFF
+#define LED_STATE_ADDR 0x7FFE
 #define EEPROM_BYTES 32768 // bytes
 #define EEPROM_PAGESIZE 64 // bytes
 #define W_DATA_ARR_LEN 3
@@ -47,7 +49,8 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len);
 bool button_pressed(button *btn, uint32_t debounce_ms);
 bool led_state_is_valid(ledstate *ls);
-bool load_led_state();
+bool load_led_state(uint8_t *led_state);
+bool save_led_state(uint8_t led_state);
 
 void set_leds(uint8_t led_state, uint8_t led_count);
 void set_led_state(ledstate *ls, uint8_t value);
