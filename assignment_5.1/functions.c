@@ -79,23 +79,6 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 	return (size_t) read_vals == dest_len;
 }
 
-// Pull up resistor logic. Check button, and debounce
-// Takes btn pin, and how long to sleep in debounce
-// Returns true when button is pressed, else false
-bool button_pressed(int btn_pin, int sleep_time_ms)
-{
-	if (!gpio_get(btn_pin))
-	{
-		sleep_ms(sleep_time_ms);
-		if (!gpio_get(btn_pin))
-		{
-			while (!gpio_get(btn_pin)) sleep_ms(10); // Wait for release
-			return true;
-		}
-		return false;
-	}
-	return false; // BTN not pressed
-}
 
 // Writes n amount of bytes to EEPROM through I2C, src_len = amount of bytes
 // Returns true if write was successful
@@ -117,7 +100,7 @@ bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const 
 		memcpy(data_chunk + 2, src_arr, chunk_size);
 		// chunk_size + 2 is for the msb/lsb
 		int bytes_written = i2c_write_blocking(i2c, device_addr, data_chunk, chunk_size + 2, false);
-		if (bytes_written != chunk_size + 2) return false;
+		if ((uint8_t) bytes_written != chunk_size + 2) return false;
 		sleep_ms(WR_SLEEP_TIME_MS);
 		src_len -= chunk_size; // Lower src_length
 		w_addr += chunk_size;
@@ -139,7 +122,7 @@ bool led_state_is_valid(ledstate *ls)
 	return ls->state == (uint8_t) ~ls->not_state;
 }
 
-// Sets the leds on from the led_state byte, led_count = amount of leds in the byte
+
 // Uses pull_up resistor logic
 void set_leds(uint8_t led_state, uint8_t led_count)
 {
@@ -148,6 +131,24 @@ void set_leds(uint8_t led_state, uint8_t led_count)
 		uint8_t new_bit = (led_state >> i) & 1;
 		gpio_put(LED_START + i, !new_bit);
 	}
+}
+
+void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms)
+{
+	btn->btn_pin = pin;
+	btn->last_accepted_time_us = time_us_32() - debounce_ms * 1000;
+	btn->last_state = true; // Not pressed
+}
+
+bool button_pressed(button *btn, uint32_t debounce_ms)
+{
+	bool cur_state = gpio_get(btn->btn_pin);
+	uint32_t now = time_us_32();
+	if (cur_state == btn->last_state) return false; // No changes
+	if (now - btn->last_accepted_time_us < debounce_ms * 1000) return false;
+	btn->last_state = cur_state;
+	btn->last_accepted_time_us = now;
+	return !cur_state;
 }
 
 // Runs all the different eeprom functions.
@@ -172,7 +173,7 @@ void test_eeprom_functions(void)
 	else printf("Failed to read data!\n");
 	if (write_n_bytes(i2c0, EEPROM_ADDR,write_n_addr, write_bytes, 3)) printf("Successfully written data\n");
 	else printf("Failed to write data\n");
-	if (read_n_bytes(i2c0, EEPROM_ADDR, write_n_addr, byte_buffer,3)) printf("Successfully read data\nRead value1: %0X\nRead value2: %02X\n", byte_buffer[0],byte_buffer[1]);
+	if (read_n_bytes(i2c0, EEPROM_ADDR, write_n_addr, byte_buffer,3)) printf("Successfully read data\nRead value1: %02X\nRead value2: %02X\n", byte_buffer[0],byte_buffer[1]);
 	else printf("Failed to read data!\n");
 }
 

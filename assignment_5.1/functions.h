@@ -18,6 +18,8 @@
 #define SW1_PIN 8
 #define SW2_PIN 7
 #define BTN_MASK (1 << (SW0_PIN) | 1<<(SW1_PIN) | 1 << (SW2_PIN))
+#define BTN_COUNT 3
+#define BTN_DEBOUNCE_MS 50
 // LED pins
 #define LED1_PIN 20
 #define LED2_PIN 21
@@ -25,16 +27,24 @@
 #define LED_MASK (1 << (LED1_PIN) | (1 << LED2_PIN) | (1 << LED3_PIN))
 #define LED_START LED1_PIN // Start point for leds, to calculate led position for set_leds
 
-typedef struct ledstate {
+typedef struct ledstate
+{
  uint8_t state;
  uint8_t not_state;
 } ledstate;
+
+typedef struct button
+{
+ uint32_t last_accepted_time_us; // microseconds
+ bool last_state; // True = not pressed, false = pressed
+ uint8_t btn_pin;
+}button;
 
 bool write_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, uint8_t w_data);
 bool read_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *r_data);
 bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *dest_arr, size_t dest_len);
 bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const uint8_t *src_arr, size_t src_len);
-bool button_pressed(int btn_pin, int sleep_time_ms);
+bool button_pressed(button *btn, uint32_t debounce_ms);
 bool led_state_is_valid(ledstate *ls);
 
 void set_leds(uint8_t led_state, uint8_t led_count);
@@ -43,5 +53,6 @@ void setup_i2c(i2c_inst_t *i2c, uint bitrate, uint8_t sda, uint8_t scl);
 void pull_up(void);
 void init_buttons(uint32_t btn_mask);
 void init_leds(uint32_t led_mask);
+void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms);
 void test_eeprom_functions(void);
 
