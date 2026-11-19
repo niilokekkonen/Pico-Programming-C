@@ -6,8 +6,12 @@
 #define I2C0_SDA_PIN 16
 #define I2C0_SCL_PIN 17
 #define I2C_BITRATE_HZ (100 * 1000) // 100 kHz
+#define I2C_TIMEOUT_US 500000
 // EEPROM constants
 #define EEPROM_ADDR 0x50 // EEPROM device address
+// The largest possible address to store led state with 2 bytes
+// EEPROM address range from 0x0000 -> 0x7FFF
+#define LED_STATE_ADDR 0x7FFE
 // Log starts from address 0, and the first two kilobytes are reserved for log msgs
 // Therefore last address = 2047 = 0x7FF
 #define LOG_START_ADDR 0x0
@@ -54,6 +58,9 @@ bool button_pressed(button *btn, uint32_t debounce_ms);
 bool led_state_is_valid(ledstate *ls);
 bool load_led_state(uint8_t *led_state);
 bool save_led_state(uint8_t led_state);
+bool log_is_valid(uint8_t *log_buf, size_t log_buf_len);
+
+uint16_t crc16(const uint8_t *data_p, size_t length);
 
 void set_leds(uint8_t led_state, uint8_t led_count);
 void set_led_state(ledstate *ls, uint8_t value);

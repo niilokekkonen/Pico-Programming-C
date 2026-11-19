@@ -42,7 +42,7 @@ bool write_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, uint8_t w
 	uint8_t msb = w_addr >> 8;
 	uint8_t lsb = w_addr & 0xFF;
 	uint8_t data_arr[W_DATA_ARR_LEN] = {msb, lsb, w_data};
-	int returned_vals = i2c_write_blocking(i2c, device_addr, data_arr, W_DATA_ARR_LEN, false);
+	int returned_vals = i2c_write_timeout_us(i2c, device_addr, data_arr, W_DATA_ARR_LEN, false, I2C_TIMEOUT_US);
 	if (returned_vals == W_DATA_ARR_LEN) sleep_ms(WR_SLEEP_TIME_MS); // Wait for write operation to be completed
 	return returned_vals == W_DATA_ARR_LEN; // True if all were written, else false
 }
@@ -56,9 +56,9 @@ bool read_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *r
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t data_arr[R_ADDR_LEN] = {msb, lsb};
 	// First open I2C connection with write, but without data
-	int returned_vals = i2c_write_blocking(i2c, device_addr, data_arr, R_ADDR_LEN, true);
+	int returned_vals = i2c_write_timeout_us(i2c, device_addr, data_arr, R_ADDR_LEN, true, I2C_TIMEOUT_US);
 	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection
-	int read_vals = i2c_read_blocking(i2c, device_addr, r_data, READ_LEN, false);
+	int read_vals = i2c_read_timeout_us(i2c, device_addr, r_data, READ_LEN, false, I2C_TIMEOUT_US);
 	return read_vals == READ_LEN;
 }
 
@@ -73,9 +73,11 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 	uint8_t msb = r_addr >> 8;
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t addr_buf[R_ADDR_LEN] = {msb, lsb};
-	int returned_vals = i2c_write_blocking(i2c, device_addr, addr_buf, R_ADDR_LEN, true);
-	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection
-	int read_vals = i2c_read_blocking(i2c, device_addr, dest_arr, dest_len, false);
+	int returned_vals = i2c_write_timeout_us(i2c, device_addr, addr_buf, R_ADDR_LEN, true, I2C_TIMEOUT_US);
+	if (returned_vals == PICO_ERROR_TIMEOUT) return false;
+	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection to EEPROM
+	int read_vals = i2c_read_timeout_us(i2c, device_addr, dest_arr, dest_len, false, I2C_TIMEOUT_US);
+	if (read_vals < 0) return false; // Read error, PICO_ERROR_TIMEOUT/GENERIC ERROR
 	return (size_t) read_vals == dest_len;
 }
 
@@ -99,7 +101,8 @@ bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const 
 		uint8_t data_chunk[EEPROM_PAGESIZE + 2] = {msb, lsb};
 		memcpy(data_chunk + 2, src_arr, chunk_size);
 		// chunk_size + 2 is for the msb/lsb
-		int bytes_written = i2c_write_blocking(i2c, device_addr, data_chunk, chunk_size + 2, false);
+		int bytes_written = i2c_write_timeout_us(i2c, device_addr, data_chunk, chunk_size + 2, false, I2C_TIMEOUT_US);
+		if (bytes_written < 0) return false;  // write error, PICO_ERROR_TIMEOUT/GENERIC ERROR
 		if ((size_t) bytes_written != chunk_size + 2) return false;
 		sleep_ms(WR_SLEEP_TIME_MS);
 		src_len -= chunk_size;
@@ -132,9 +135,10 @@ void set_leds(uint8_t led_state, uint8_t led_count)
 }
 // Loads LED state from EEPROM to *led_state
 // Returns true if successfully read the LED state
-// else false
+// else false (led_state is NULL, state is not valid or read failed)
 bool load_led_state(uint8_t *led_state)
 {
+	if (led_state != NULL) return false;
 	ledstate temp_state;
 	bool read_ok = read_n_bytes(i2c0, EEPROM_ADDR, LED_STATE_ADDR, (uint8_t *) &temp_state, sizeof(temp_state));
 	if (read_ok)
@@ -145,6 +149,8 @@ bool load_led_state(uint8_t *led_state)
 			*led_state = temp_state.state & 0x07; // Leave the last three bits to the result
 			return true;
 		}
+		// Not valid state, return false
+		*led_state = 0b010;
 		return false;
 	}
 	return false;
@@ -182,6 +188,32 @@ bool button_pressed(button *btn, uint32_t debounce_ms)
 	btn->last_accepted_time_us = now;
 	return !cur_state;
 }
+
+// Validates one log row
+// Returns true if valid, else false
+// For log to be valid, '\0' has to be after log_buf[0], but before log_buf[62], and pass crc
+bool log_is_valid(uint8_t *log_buf, size_t log_buf_len)
+{
+	uint8_t max_search_len = log_buf_len - 2; // '\0' has to be in idx log - crc bytes
+	if (log_buf == NULL || log_buf_len < 4) return false; // 4 is minimum bytes for valid log, char + '\0' + 2 bytes of crc
+	uint8_t *null_char_ptr = memchr(log_buf, '\0', max_search_len); // Find NULL
+	if (null_char_ptr == NULL || null_char_ptr == log_buf) return false; // no '\0' in log msg or null in buf[0]
+}
+
+// Calculates and returns CRC checksum
+uint16_t crc16(const uint8_t *data_p, size_t length)
+{
+	uint8_t x;
+	uint16_t crc = 0xFFFF;
+	while (length--)
+	{
+		x = crc >> 8 ^ *data_p++;
+		x ^= x >> 4;
+		crc = (crc << 8) ^ ((uint16_t) (x << 12)) ^ ((uint16_t) (x << 5)) ^ ((uint16_t) x);
+	}
+	return crc;
+}
+
 
 // Runs write/read byte, and write/read_n_bytes. For testing
 void test_eeprom_functions(void)

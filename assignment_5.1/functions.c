@@ -135,9 +135,10 @@ void set_leds(uint8_t led_state, uint8_t led_count)
 }
 // Loads LED state from EEPROM to *led_state
 // Returns true if successfully read the LED state
-// else false
+// else false (led_state is NULL, state is not valid or read failed)
 bool load_led_state(uint8_t *led_state)
 {
+	if (led_state != NULL) return false;
 	ledstate temp_state;
 	bool read_ok = read_n_bytes(i2c0, EEPROM_ADDR, LED_STATE_ADDR, (uint8_t *) &temp_state, sizeof(temp_state));
 	if (read_ok)
@@ -148,6 +149,8 @@ bool load_led_state(uint8_t *led_state)
 			*led_state = temp_state.state & 0x07; // Leave the last three bits to the result
 			return true;
 		}
+		// Not valid state, return false
+		*led_state = 0b010;
 		return false;
 	}
 	return false;

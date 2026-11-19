@@ -36,7 +36,8 @@ int main(void)
 		{
 			printf("Time since startup %llus\nLed state %02X\n", (time_us_64() - start_time) / 1000000, led_state);
 			set_leds(led_state, LED_COUNT);
-			save_led_state(led_state);
+			bool state_saved = save_led_state(led_state);
+			if (!state_saved) printf("Failed to save LED state\n");
 			changed = false; // changes saved
 		}
 	}
