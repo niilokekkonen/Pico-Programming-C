@@ -42,7 +42,7 @@ bool write_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, uint8_t w
 	uint8_t msb = w_addr >> 8;
 	uint8_t lsb = w_addr & 0xFF;
 	uint8_t data_arr[W_DATA_ARR_LEN] = {msb, lsb, w_data};
-	int returned_vals = i2c_write_blocking(i2c, device_addr, data_arr, W_DATA_ARR_LEN, false);
+	int returned_vals = i2c_write_timeout_us(i2c, device_addr, data_arr, W_DATA_ARR_LEN, false, I2C_TIMEOUT_US);
 	if (returned_vals == W_DATA_ARR_LEN) sleep_ms(WR_SLEEP_TIME_MS); // Wait for write operation to be completed
 	return returned_vals == W_DATA_ARR_LEN; // True if all were written, else false
 }
@@ -56,9 +56,9 @@ bool read_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *r
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t data_arr[R_ADDR_LEN] = {msb, lsb};
 	// First open I2C connection with write, but without data
-	int returned_vals = i2c_write_blocking(i2c, device_addr, data_arr, R_ADDR_LEN, true);
+	int returned_vals = i2c_write_timeout_us(i2c, device_addr, data_arr, R_ADDR_LEN, true, I2C_TIMEOUT_US);
 	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection
-	int read_vals = i2c_read_blocking(i2c, device_addr, r_data, READ_LEN, false);
+	int read_vals = i2c_read_timeout_us(i2c, device_addr, r_data, READ_LEN, false, I2C_TIMEOUT_US);
 	return read_vals == READ_LEN;
 }
 
@@ -73,9 +73,11 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 	uint8_t msb = r_addr >> 8;
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t addr_buf[R_ADDR_LEN] = {msb, lsb};
-	int returned_vals = i2c_write_blocking(i2c, device_addr, addr_buf, R_ADDR_LEN, true);
-	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection
-	int read_vals = i2c_read_blocking(i2c, device_addr, dest_arr, dest_len, false);
+	int returned_vals = i2c_write_timeout_us(i2c, device_addr, addr_buf, R_ADDR_LEN, true, I2C_TIMEOUT_US);
+	if (returned_vals == PICO_ERROR_TIMEOUT) return false;
+	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection to EEPROM
+	int read_vals = i2c_read_timeout_us(i2c, device_addr, dest_arr, dest_len, false, I2C_TIMEOUT_US);
+	if (read_vals < 0) return false; // Read error, PICO_ERROR_TIMEOUT/GENERIC ERROR
 	return (size_t) read_vals == dest_len;
 }
 
@@ -99,7 +101,8 @@ bool write_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, const 
 		uint8_t data_chunk[EEPROM_PAGESIZE + 2] = {msb, lsb};
 		memcpy(data_chunk + 2, src_arr, chunk_size);
 		// chunk_size + 2 is for the msb/lsb
-		int bytes_written = i2c_write_blocking(i2c, device_addr, data_chunk, chunk_size + 2, false);
+		int bytes_written = i2c_write_timeout_us(i2c, device_addr, data_chunk, chunk_size + 2, false, I2C_TIMEOUT_US);
+		if (bytes_written < 0) return false;  // write error, PICO_ERROR_TIMEOUT/GENERIC ERROR
 		if ((size_t) bytes_written != chunk_size + 2) return false;
 		sleep_ms(WR_SLEEP_TIME_MS);
 		src_len -= chunk_size;

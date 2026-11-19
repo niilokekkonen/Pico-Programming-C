@@ -21,7 +21,7 @@ int main(void)
 	if (!load_led_state(&led_state)) led_state = 0b010;
 	set_leds(led_state,LED_COUNT);
 	uint64_t start_time = time_us_64();
-	printf("Start time %llu\nLed state %02X\n", start_time / 1000000, led_state);
+	printf("Start time %llus\nLed state %02X\n", start_time / 1000000, led_state);
 	while (true)
 	{
 		for (i = 0; i < BTN_COUNT; i++)
@@ -34,7 +34,7 @@ int main(void)
 		}
 		if (changed)
 		{
-			printf("Current time %llu\nLed state %02X\n", (time_us_64() - start_time) / 1000000, led_state);
+			printf("Time since startup %llus\nLed state %02X\n", (time_us_64() - start_time) / 1000000, led_state);
 			set_leds(led_state, LED_COUNT);
 			save_led_state(led_state);
 			changed = false; // changes saved
