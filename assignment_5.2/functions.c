@@ -138,7 +138,7 @@ void set_leds(uint8_t led_state, uint8_t led_count)
 // else false (led_state is NULL, state is not valid or read failed)
 bool load_led_state(uint8_t *led_state)
 {
-	if (led_state != NULL) return false;
+	if (led_state == NULL) return false;
 	ledstate temp_state;
 	bool read_ok = read_n_bytes(i2c0, EEPROM_ADDR, LED_STATE_ADDR, (uint8_t *) &temp_state, sizeof(temp_state));
 	if (read_ok)
@@ -195,7 +195,7 @@ bool button_pressed(button *btn, uint32_t debounce_ms)
 bool log_is_valid(const uint8_t *log_buf, size_t log_buf_len)
 {
 	if (log_buf == NULL || log_buf_len < 4) return false; // 4 is minimum bytes for valid log, char + '\0' + 2 bytes of crc
-	uint8_t max_search_len = log_buf_len - 2; // '\0' has to be in idx log - crc bytes
+	size_t max_search_len = log_buf_len - 2; // '\0' has to be in idx log - crc bytes
 	uint8_t *null_char_ptr = memchr(log_buf, '\0', max_search_len); // Find NULL
 	if (null_char_ptr == NULL || null_char_ptr == log_buf) return false; // no '\0' in log msg or null in buf[0]
 	size_t null_idx = null_char_ptr - log_buf; // Get the length of the string
@@ -203,11 +203,92 @@ bool log_is_valid(const uint8_t *log_buf, size_t log_buf_len)
 }
 
 // Creates a log entry with msg + '\0' + CRC msb + CRC lsb
-bool parse_log_entry(const uint8_t *msg_buf, size_t msg_buf_len, uint8_t out_msg, size_t out_msg_len)
+// returns amount of characters written to output buffer
+// If none was written returns 0
+size_t parse_log_entry(const uint8_t *msg_buf, size_t msg_buf_len, uint8_t *out_msg, size_t out_msg_len)
 {
-	if (msg_buf == NULL || msg_buf_len == 0) return false;
+	if (msg_buf == NULL || out_msg == NULL) return 0;
+	if (msg_buf_len == 0 || msg_buf_len > MAX_LOG_ENTRY_LEN || out_msg_len < msg_buf_len + 3) return 0;
+	memcpy(out_msg, msg_buf, msg_buf_len);
+	out_msg[msg_buf_len] = '\0';
+	uint16_t crc = crc16(out_msg, msg_buf_len + 1);
+	out_msg[msg_buf_len + 1] = (uint8_t) (crc >> 8);
+	out_msg[msg_buf_len + 2] = (uint8_t) (crc & 0xff);
+	return msg_buf_len + 3;
+}
+
+// Reads one entry from log
+// Returns false if msg_buf is NULL, n is bigger than LOG entries or msg_buffer is less than pagesize
+// Returns true if succeeds
+bool read_log_slot(size_t n, uint8_t *msg_buf, size_t msg_buf_len)
+{
+	if (msg_buf == NULL || n >= LOG_ENTRIES) return false;
+	if (msg_buf_len < EEPROM_PAGESIZE) return false;
+	if (!read_n_bytes(i2c0, EEPROM_ADDR, n * EEPROM_PAGESIZE, msg_buf, EEPROM_PAGESIZE)) return false;
+	return true;
+}
+
+// Returns true if a free slot was found, gives the slot_number as ptr
+// else false
+bool find_free_slot(size_t *free_slot)
+{
+	if (free_slot == NULL) return false;
+	uint8_t log_buf[EEPROM_PAGESIZE];
+	for (int i = 0; i < LOG_ENTRIES; i++)
+	{
+		//
+		if (!read_log_slot(i, log_buf, sizeof(log_buf))) return false; // Failed to read EEPROM
+		if (!log_is_valid(log_buf, sizeof(log_buf))) // Found first free slot
+		{
+			*free_slot = i; // return free slot number
+			return true;
+		}
+	}
+	return false;
+}
+
+// Erases the total log
+// returns true if successful, false if writing fails
+bool erase_log(void)
+{
+	for (int i= 0; i < LOG_ENTRIES; i++)
+	{
+		// Writing fails;
+		if (!write_byte(i2c0, EEPROM_ADDR, i * EEPROM_PAGESIZE, 0x00)) return false;
+	}
+	return true;
+}
+
+// Writes a message to log
+// Returns true if write was successful
+// else false
+bool log_write(uint8_t *msg_buf, size_t msg_buf_len)
+{
+	if (msg_buf == NULL) return false;
+	size_t nxt_free_slot = 0;
+	bool free_slt_found = find_free_slot(&nxt_free_slot);
+	if (!free_slt_found)
+	{	// If no free slots erase slots
+		bool erased = erase_log();
+		if (!erased) return false; // Erasing log failed
+		nxt_free_slot = 0;
+	}
+	uint8_t log_buf[EEPROM_PAGESIZE];
+	size_t log_entry = parse_log_entry(msg_buf, msg_buf_len, log_buf, EEPROM_PAGESIZE);
+	if (!write_n_bytes(i2c0, EEPROM_ADDR, nxt_free_slot * EEPROM_PAGESIZE, log_buf, log_entry))
+		return false;
+	return true;
+}
+
+// Prints all log entries
+void log_print_all(void)
+{
+	for (int i= 0; i < LOG_ENTRIES; i++)
+	{
+	}
 
 }
+
 
 // Calculates and returns CRC checksum
 uint16_t crc16(const uint8_t *data_p, size_t length)
@@ -222,7 +303,4 @@ uint16_t crc16(const uint8_t *data_p, size_t length)
 	}
 	return crc;
 }
-
-
-
 

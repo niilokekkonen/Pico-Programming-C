@@ -17,6 +17,7 @@
 #define LOG_START_ADDR 0x0
 #define LOG_STOP_ADDR 0x7FF
 #define MAX_LOG_ENTRY_LEN 61 // Maximum amount of characters per log entry
+#define LOG_ENTRIES 32 // Amount of log entries reserved in EEPROM
 #define EEPROM_BYTES 32768 // bytes
 #define EEPROM_PAGESIZE 64 // bytes
 #define W_DATA_ARR_LEN 3
@@ -60,7 +61,12 @@ bool led_state_is_valid(ledstate *ls);
 bool load_led_state(uint8_t *led_state);
 bool save_led_state(uint8_t led_state);
 bool log_is_valid(const uint8_t *log_buf, size_t log_buf_len);
-bool parse_log_entry(const uint8_t *msg_buf, size_t msg_buf_len, uint8_t out_msg, size_t out_msg_len);
+bool read_log_slot(size_t n, uint8_t *msg_buf, size_t msg_buf_len);
+bool find_free_slot(size_t *free_slot);
+bool erase_log();
+bool log_write(uint8_t *msg_buf, size_t msg_buf_len);
+
+size_t parse_log_entry(const uint8_t *msg_buf, size_t msg_buf_len, uint8_t *out_msg, size_t out_msg_len);
 
 uint16_t crc16(const uint8_t *data_p, size_t length);
 
@@ -71,4 +77,4 @@ void pull_up(void);
 void init_buttons(uint32_t btn_mask);
 void init_leds(uint32_t led_mask);
 void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms);
-
+void log_print_all();

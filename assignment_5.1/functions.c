@@ -138,7 +138,7 @@ void set_leds(uint8_t led_state, uint8_t led_count)
 // else false (led_state is NULL, state is not valid or read failed)
 bool load_led_state(uint8_t *led_state)
 {
-	if (led_state != NULL) return false;
+	if (led_state == NULL) return false;
 	ledstate temp_state;
 	bool read_ok = read_n_bytes(i2c0, EEPROM_ADDR, LED_STATE_ADDR, (uint8_t *) &temp_state, sizeof(temp_state));
 	if (read_ok)
