@@ -52,6 +52,7 @@ bool write_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t w_addr, uint8_t w
 // Saves read data to *r_data
 bool read_byte(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t *r_data)
 {
+	if (r_data == NULL) return false;
 	uint8_t msb = r_addr >> 8;
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t data_arr[R_ADDR_LEN] = {msb, lsb};
@@ -153,6 +154,7 @@ bool load_led_state(uint8_t *led_state)
 		*led_state = 0b010;
 		return false;
 	}
+	*led_state = 0b010;
 	return false;
 }
 
@@ -229,15 +231,19 @@ bool read_log_slot(size_t n, uint8_t *msg_buf, size_t msg_buf_len)
 }
 
 // Returns true if a free slot was found, gives the slot_number as ptr
-// else false
-bool find_free_slot(size_t *free_slot)
+// else false, read_failed lsb = 1 if failed, 0 if worked
+bool find_free_slot(size_t *free_slot, uint8_t *read_failed)
 {
-	if (free_slot == NULL) return false;
+	if (free_slot == NULL || read_failed == NULL) return false;
+	*read_failed = 0;
 	uint8_t log_buf[EEPROM_PAGESIZE];
 	for (int i = 0; i < LOG_ENTRIES; i++)
 	{
-		//
-		if (!read_log_slot(i, log_buf, sizeof(log_buf))) return false; // Failed to read EEPROM
+		if (!read_log_slot(i, log_buf, sizeof(log_buf)))
+		{
+			*read_failed = 1; // Failed to read EEPROM,
+			return false;
+		}
 		if (!log_is_valid(log_buf, sizeof(log_buf))) // Found first free slot
 		{
 			*free_slot = i; // return free slot number
@@ -266,27 +272,37 @@ bool log_write(uint8_t *msg_buf, size_t msg_buf_len)
 {
 	if (msg_buf == NULL) return false;
 	size_t nxt_free_slot = 0;
-	bool free_slt_found = find_free_slot(&nxt_free_slot);
+	uint8_t read_failed = 0;
+	uint8_t log_buf[EEPROM_PAGESIZE];
+	size_t log_entry = parse_log_entry(msg_buf, msg_buf_len, log_buf, EEPROM_PAGESIZE);
+	if (log_entry == 0) return false; // Couldn't parse msg
+	bool free_slt_found = find_free_slot(&nxt_free_slot, &read_failed);
 	if (!free_slt_found)
 	{	// If no free slots erase slots
+		if (read_failed & 1) return false; // EEPROM READ Failed
 		bool erased = erase_log();
 		if (!erased) return false; // Erasing log failed
 		nxt_free_slot = 0;
 	}
-	uint8_t log_buf[EEPROM_PAGESIZE];
-	size_t log_entry = parse_log_entry(msg_buf, msg_buf_len, log_buf, EEPROM_PAGESIZE);
 	if (!write_n_bytes(i2c0, EEPROM_ADDR, nxt_free_slot * EEPROM_PAGESIZE, log_buf, log_entry))
 		return false;
-	return true;
+	else return true;
 }
 
 // Prints all log entries
 void log_print_all(void)
 {
+	uint8_t log_buf[EEPROM_PAGESIZE];
 	for (int i= 0; i < LOG_ENTRIES; i++)
 	{
-	}
+		if (read_log_slot(i, log_buf, sizeof(log_buf)))
+		{
+			if (log_is_valid(log_buf, EEPROM_PAGESIZE)) printf("Line %d, MSG: %s\n", i, (char *) log_buf);
+			else return;
+		}
+		else return;
 
+	}
 }
 
 

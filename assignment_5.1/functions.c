@@ -153,6 +153,7 @@ bool load_led_state(uint8_t *led_state)
 		*led_state = 0b010;
 		return false;
 	}
+	*led_state = 0b010;
 	return false;
 }
 

@@ -62,7 +62,7 @@ bool load_led_state(uint8_t *led_state);
 bool save_led_state(uint8_t led_state);
 bool log_is_valid(const uint8_t *log_buf, size_t log_buf_len);
 bool read_log_slot(size_t n, uint8_t *msg_buf, size_t msg_buf_len);
-bool find_free_slot(size_t *free_slot);
+bool find_free_slot(size_t *free_slot, uint8_t *read_failed);
 bool erase_log();
 bool log_write(uint8_t *msg_buf, size_t msg_buf_len);
 
