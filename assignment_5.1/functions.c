@@ -188,31 +188,3 @@ bool button_pressed(button *btn, uint32_t debounce_ms)
 	btn->last_accepted_time_us = now;
 	return !cur_state;
 }
-
-// Runs write/read byte, and write/read_n_bytes. For testing
-void test_eeprom_functions(void)
-{
-	uint8_t read_val = 0;
-	uint8_t write_val = 0x5A; // 0101 1010
-	uint8_t write_val2 = 0x7F; // 0111 1111
-	uint8_t write_bytes[3] = {0x5F, 0x67, 0xFF};
-	uint8_t byte_buffer[64] = {0};
-	uint16_t r_w_addr = 0x1234; // Ranges from 0x0000 -> 07FFF
-	uint16_t write_n_addr = 0x3345;
-	sleep_ms(100);
-	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val)) printf("Succesfully wrote data\n");
-	else printf("Failed to write data\n");
-	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02X\n", read_val);
-	else printf("Failed to read data!\n");
-	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val2)) printf("Succesfully wrote data\n");
-	else printf("Failed to write data\n");
-	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02X\n", read_val);
-	else printf("Failed to read data!\n");
-	if (write_n_bytes(i2c0, EEPROM_ADDR,write_n_addr, write_bytes, 3)) printf("Successfully written data\n");
-	else printf("Failed to write data\n");
-	if (read_n_bytes(i2c0, EEPROM_ADDR, write_n_addr, byte_buffer,3)) printf("Successfully read data\nRead value1: %02X\nRead value2: %02X\n", byte_buffer[0],byte_buffer[1]);
-	else printf("Failed to read data!\n");
-}
-
-
-

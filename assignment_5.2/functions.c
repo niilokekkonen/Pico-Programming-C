@@ -192,12 +192,21 @@ bool button_pressed(button *btn, uint32_t debounce_ms)
 // Validates one log row
 // Returns true if valid, else false
 // For log to be valid, '\0' has to be after log_buf[0], but before log_buf[62], and pass crc
-bool log_is_valid(uint8_t *log_buf, size_t log_buf_len)
+bool log_is_valid(const uint8_t *log_buf, size_t log_buf_len)
 {
-	uint8_t max_search_len = log_buf_len - 2; // '\0' has to be in idx log - crc bytes
 	if (log_buf == NULL || log_buf_len < 4) return false; // 4 is minimum bytes for valid log, char + '\0' + 2 bytes of crc
+	uint8_t max_search_len = log_buf_len - 2; // '\0' has to be in idx log - crc bytes
 	uint8_t *null_char_ptr = memchr(log_buf, '\0', max_search_len); // Find NULL
 	if (null_char_ptr == NULL || null_char_ptr == log_buf) return false; // no '\0' in log msg or null in buf[0]
+	size_t null_idx = null_char_ptr - log_buf; // Get the length of the string
+	return crc16(log_buf, null_idx + 3) == 0; // Returns true if CRC checksum is correct, else false.
+}
+
+// Creates a log entry with msg + '\0' + CRC msb + CRC lsb
+bool parse_log_entry(const uint8_t *msg_buf, size_t msg_buf_len, uint8_t out_msg, size_t out_msg_len)
+{
+	if (msg_buf == NULL || msg_buf_len == 0) return false;
+
 }
 
 // Calculates and returns CRC checksum
@@ -209,36 +218,11 @@ uint16_t crc16(const uint8_t *data_p, size_t length)
 	{
 		x = crc >> 8 ^ *data_p++;
 		x ^= x >> 4;
-		crc = (crc << 8) ^ ((uint16_t) (x << 12)) ^ ((uint16_t) (x << 5)) ^ ((uint16_t) x);
+		crc = (crc << 8) ^ (uint16_t) (x << 12) ^ (uint16_t) (x << 5) ^ (uint16_t) x;
 	}
 	return crc;
 }
 
-
-// Runs write/read byte, and write/read_n_bytes. For testing
-void test_eeprom_functions(void)
-{
-	uint8_t read_val = 0;
-	uint8_t write_val = 0x5A; // 0101 1010
-	uint8_t write_val2 = 0x7F; // 0111 1111
-	uint8_t write_bytes[3] = {0x5F, 0x67, 0xFF};
-	uint8_t byte_buffer[64] = {0};
-	uint16_t r_w_addr = 0x1234; // Ranges from 0x0000 -> 07FFF
-	uint16_t write_n_addr = 0x3345;
-	sleep_ms(100);
-	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val)) printf("Succesfully wrote data\n");
-	else printf("Failed to write data\n");
-	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02X\n", read_val);
-	else printf("Failed to read data!\n");
-	if (write_byte(i2c0, EEPROM_ADDR, r_w_addr, write_val2)) printf("Succesfully wrote data\n");
-	else printf("Failed to write data\n");
-	if (read_byte(i2c0, EEPROM_ADDR, r_w_addr, &read_val)) printf("Successfully read data %02X\n", read_val);
-	else printf("Failed to read data!\n");
-	if (write_n_bytes(i2c0, EEPROM_ADDR,write_n_addr, write_bytes, 3)) printf("Successfully written data\n");
-	else printf("Failed to write data\n");
-	if (read_n_bytes(i2c0, EEPROM_ADDR, write_n_addr, byte_buffer,3)) printf("Successfully read data\nRead value1: %02X\nRead value2: %02X\n", byte_buffer[0],byte_buffer[1]);
-	else printf("Failed to read data!\n");
-}
 
 
 

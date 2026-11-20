@@ -62,5 +62,4 @@ void pull_up(void);
 void init_buttons(uint32_t btn_mask);
 void init_leds(uint32_t led_mask);
 void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms);
-void test_eeprom_functions(void);
 
