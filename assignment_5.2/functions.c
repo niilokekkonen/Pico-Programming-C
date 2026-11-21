@@ -198,7 +198,7 @@ bool log_is_valid(const uint8_t *log_buf, size_t log_buf_len)
 {
 	if (log_buf == NULL || log_buf_len < 4) return false; // 4 is minimum bytes for valid log, char + '\0' + 2 bytes of crc
 	size_t max_search_len = log_buf_len - 2; // '\0' has to be in idx log - crc bytes
-	uint8_t *null_char_ptr = memchr(log_buf, '\0', max_search_len); // Find NULL
+	const uint8_t *null_char_ptr = memchr(log_buf, '\0', max_search_len); // Find NULL
 	if (null_char_ptr == NULL || null_char_ptr == log_buf) return false; // no '\0' in log msg or null in buf[0]
 	size_t null_idx = null_char_ptr - log_buf; // Get the length of the string
 	return crc16(log_buf, null_idx + 3) == 0; // Returns true if CRC checksum is correct, else false.
@@ -268,7 +268,7 @@ bool erase_log(void)
 // Writes a message to log
 // Returns true if write was successful
 // else false
-bool log_write(uint8_t *msg_buf, size_t msg_buf_len)
+bool log_write(const uint8_t *msg_buf, size_t msg_buf_len)
 {
 	if (msg_buf == NULL) return false;
 	size_t nxt_free_slot = 0;
@@ -305,6 +305,45 @@ void log_print_all(void)
 	}
 }
 
+// Collects characters from stdin without blocking.
+// Call every loop round. Keeps state in buf/idx/overflow between calls.
+// Returns true when a full line is ready in buf ('\0' terminated, CR/LF removed).
+// If the line was longer than the buffer, *overflow is true. The caller resets it after handling.
+bool poll_line(char *buf, size_t size, size_t *index, bool *overflow)
+{
+	if (buf == NULL || index == NULL || overflow == NULL || size < 2) return false;
+	int c = getchar_timeout_us(0);
+	while (c != PICO_ERROR_TIMEOUT)
+	{
+		if (c == '\r' || c == '\n')
+		{
+			if (*index == 0 && !*overflow) // Empty line, e.g. LF after CR
+			{
+				c = getchar_timeout_us(0);
+				continue;
+			}
+			buf[*index] = '\0';
+			*index = 0;
+			return true;
+		}
+		if (*index < size - 1) buf[(*index)++] = (char) c;
+		else *overflow = true; // Line too long, drop the rest until line end
+		c = getchar_timeout_us(0);
+	}
+	return false;
+}
+
+// Interprets a command line. Writes the command to *cmd.
+// Returns CMD_PARSE_OK if the line is "read" or "erase", else CMD_PARSE_UNKNOWN
+cmd_parse_res_t parse_command(const char *line, command_t *cmd)
+{
+	if (line == NULL || cmd == NULL) return CMD_PARSE_UNKNOWN;
+	*cmd = CMD_NONE;
+	if (strcmp(line, "read") == 0) *cmd = CMD_READ;
+	else if (strcmp(line, "erase") == 0) *cmd = CMD_ERASE;
+	else return CMD_PARSE_UNKNOWN;
+	return CMD_PARSE_OK;
+}
 
 // Calculates and returns CRC checksum
 uint16_t crc16(const uint8_t *data_p, size_t length)

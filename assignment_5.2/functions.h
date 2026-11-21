@@ -2,6 +2,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "hardware/i2c.h"
+
+#include <stddef.h>
+
+// Command line constants
+#define CMD_BUF_SIZE 16 // Command line buffer size, including '\0'
+#define LOG_MSG_BUF (MAX_LOG_ENTRY_LEN + 1) // Message buffer, room for '\0'
 // I2C constants
 #define I2C0_SDA_PIN 16
 #define I2C0_SCL_PIN 17
@@ -39,6 +45,20 @@
 #define LED_START LED1_PIN // Start point for leds, to calculate led position for set_leds
 #define LED_COUNT 3
 
+typedef enum
+{
+ CMD_NONE,
+ CMD_READ,
+ CMD_ERASE
+} command_t;
+
+typedef enum
+{
+ CMD_PARSE_OK,
+ CMD_PARSE_UNKNOWN,
+ CMD_PARSE_TOO_LONG
+} cmd_parse_res_t;
+
 typedef struct ledstate
 {
  uint8_t state;
@@ -63,9 +83,11 @@ bool save_led_state(uint8_t led_state);
 bool log_is_valid(const uint8_t *log_buf, size_t log_buf_len);
 bool read_log_slot(size_t n, uint8_t *msg_buf, size_t msg_buf_len);
 bool find_free_slot(size_t *free_slot, uint8_t *read_failed);
-bool erase_log();
-bool log_write(uint8_t *msg_buf, size_t msg_buf_len);
+bool erase_log(void);
+bool log_write(const uint8_t *msg_buf, size_t msg_buf_len);
+bool poll_line(char *buf, size_t size, size_t *index, bool *overflow);
 
+cmd_parse_res_t parse_command(const char *line, command_t *cmd);
 size_t parse_log_entry(const uint8_t *msg_buf, size_t msg_buf_len, uint8_t *out_msg, size_t out_msg_len);
 
 uint16_t crc16(const uint8_t *data_p, size_t length);
@@ -77,4 +99,4 @@ void pull_up(void);
 void init_buttons(uint32_t btn_mask);
 void init_leds(uint32_t led_mask);
 void init_button_state(button *btn, uint8_t pin, uint32_t debounce_ms);
-void log_print_all();
+void log_print_all(void);
