@@ -12,7 +12,7 @@
 #define I2C0_SDA_PIN 16
 #define I2C0_SCL_PIN 17
 #define I2C_BITRATE_HZ (100 * 1000) // 100 kHz
-#define I2C_TIMEOUT_US 500000
+#define I2C_TIMEOUT_US 50000 // 50ms
 // EEPROM constants
 #define EEPROM_ADDR 0x50 // EEPROM device address
 // The largest possible address to store led state with 2 bytes
