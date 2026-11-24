@@ -56,7 +56,6 @@ typedef enum
 {
  CMD_PARSE_OK,
  CMD_PARSE_UNKNOWN,
- CMD_PARSE_TOO_LONG
 } cmd_parse_res_t;
 
 typedef struct ledstate

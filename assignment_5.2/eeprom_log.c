@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "eeprom_log.h"
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include <stdio.h>
@@ -75,7 +75,6 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t addr_buf[R_ADDR_LEN] = {msb, lsb};
 	int returned_vals = i2c_write_timeout_us(i2c, device_addr, addr_buf, R_ADDR_LEN, true, I2C_TIMEOUT_US);
-	if (returned_vals == PICO_ERROR_TIMEOUT) return false;
 	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection to EEPROM
 	int read_vals = i2c_read_timeout_us(i2c, device_addr, dest_arr, dest_len, false, I2C_TIMEOUT_US);
 	if (read_vals < 0) return false; // Read error, PICO_ERROR_TIMEOUT/GENERIC ERROR
@@ -306,31 +305,30 @@ void log_print_all(void)
 }
 
 // Collects characters from stdin without blocking.
-// Call every loop round. Keeps state in buf/idx/overflow between calls.
+// Call every loop round. Keeps state in buf/index/overflow between calls.
 // Returns true when a full line is ready in buf ('\0' terminated, CR/LF removed).
 // If the line was longer than the buffer, *overflow is true. The caller resets it after handling.
 bool poll_line(char *buf, size_t size, size_t *index, bool *overflow)
 {
 	if (buf == NULL || index == NULL || overflow == NULL || size < 2) return false;
-	int c = getchar_timeout_us(0);
-	while (c != PICO_ERROR_TIMEOUT)
+	bool line_done = false;
+	int c;
+	while (!line_done && (c = getchar_timeout_us(0)) != PICO_ERROR_TIMEOUT)
 	{
 		if (c == '\r' || c == '\n')
 		{
-			if (*index == 0 && !*overflow) // Empty line, e.g. LF after CR
+			// Empty line (e.g. LF after CR) does nothing
+			if (*index > 0 || *overflow)
 			{
-				c = getchar_timeout_us(0);
-				continue;
+				buf[*index] = '\0';
+				*index = 0;
+				line_done = true;
 			}
-			buf[*index] = '\0';
-			*index = 0;
-			return true;
 		}
-		if (*index < size - 1) buf[(*index)++] = (char) c;
+		else if (*index < size - 1) buf[(*index)++] = (char) c;
 		else *overflow = true; // Line too long, drop the rest until line end
-		c = getchar_timeout_us(0);
 	}
-	return false;
+	return line_done;
 }
 
 // Interprets a command line. Writes the command to *cmd.

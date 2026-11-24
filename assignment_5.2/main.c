@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "eeprom_log.h"
 #include "pico/stdio.h"
 #include <stdio.h>
 #include <string.h>
@@ -9,7 +9,7 @@ static void report(const char *label, uint8_t led_state)
 {
 	char msg[LOG_MSG_BUF];
 	unsigned seconds = (unsigned) (time_us_64() / 1000000);
-	int len = snprintf(msg, sizeof(msg), "%s %us LEDs %u%u%u", label, seconds,
+	int len = snprintf(msg, sizeof(msg), "%s %us LEDs %d%d%d", label, seconds,
 					   (led_state >> 0) & 1, (led_state >> 1) & 1, (led_state >> 2) & 1);
 	if (len <= 0 || (size_t) len >= sizeof(msg))
 	{

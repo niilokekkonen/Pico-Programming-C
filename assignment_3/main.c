@@ -1,5 +1,5 @@
 #include "pico/stdlib.h"
-#include "functions.h"
+#include "stepper_motor.h"
 #include <stdio.h>
 
 int main(void)

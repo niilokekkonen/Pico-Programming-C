@@ -2,8 +2,8 @@
 
 add_executable(assignment_5.1
         main.c
-        functions.c
-        functions.h
+        eeprom_ledstate.c
+        eeprom_ledstate.h
 )
 
 target_link_libraries(assignment_5.1

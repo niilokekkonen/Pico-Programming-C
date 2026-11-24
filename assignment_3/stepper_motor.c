@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "functions.h"
+#include "stepper_motor.h"
 #include "pico/stdlib.h"
 static void empty_lf(void);
 static bool rest_is_empty(const char *start_addr);

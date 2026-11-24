@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "eeprom_ledstate.h"
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include <stdio.h>
@@ -74,7 +74,6 @@ bool read_n_bytes(i2c_inst_t *i2c, uint8_t device_addr, uint16_t r_addr, uint8_t
 	uint8_t lsb = r_addr & 0xFF;
 	uint8_t addr_buf[R_ADDR_LEN] = {msb, lsb};
 	int returned_vals = i2c_write_timeout_us(i2c, device_addr, addr_buf, R_ADDR_LEN, true, I2C_TIMEOUT_US);
-	if (returned_vals == PICO_ERROR_TIMEOUT) return false;
 	if (returned_vals != R_ADDR_LEN) return false; // Couldn't open connection to EEPROM
 	int read_vals = i2c_read_timeout_us(i2c, device_addr, dest_arr, dest_len, false, I2C_TIMEOUT_US);
 	if (read_vals < 0) return false; // Read error, PICO_ERROR_TIMEOUT/GENERIC ERROR

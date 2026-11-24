@@ -2,8 +2,8 @@
 
 add_executable(assignment_5.2
         main.c
-        functions.c
-        functions.h
+        eeprom_log.c
+        eeprom_log.h
 )
 
 target_link_libraries(assignment_5.2

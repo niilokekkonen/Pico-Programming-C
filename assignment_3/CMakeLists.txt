@@ -2,8 +2,8 @@
 
 add_executable(assignment_3
         main.c
-        functions.c
-        functions.h
+        stepper_motor.c
+        stepper_motor.h
 )
 
 target_link_libraries(assignment_3

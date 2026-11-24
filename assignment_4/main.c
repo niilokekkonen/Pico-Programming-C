@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "lora_module.h"
 #include "iuart.h"
 #include <stdio.h>
 #include <stdbool.h>

@@ -4,8 +4,8 @@ add_executable(assignment_4
         main.c
         iuart.c
         iuart.h
-        functions.c
-        functions.h
+        lora_module.c
+        lora_module.h
 )
 
 target_link_libraries(assignment_4
