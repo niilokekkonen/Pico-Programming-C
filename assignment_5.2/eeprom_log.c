@@ -300,7 +300,6 @@ void log_print_all(void)
 			else return;
 		}
 		else return;
-
 	}
 }
 
@@ -317,7 +316,7 @@ bool poll_line(char *buf, size_t size, size_t *index, bool *overflow)
 	{
 		if (c == '\r' || c == '\n')
 		{
-			// Empty line (e.g. LF after CR) does nothing
+			// Empty line (LF after CR) does nothing
 			if (*index > 0 || *overflow)
 			{
 				buf[*index] = '\0';
@@ -356,4 +355,3 @@ uint16_t crc16(const uint8_t *data_p, size_t length)
 	}
 	return crc;
 }
-

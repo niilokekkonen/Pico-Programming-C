@@ -41,21 +41,13 @@ uint32_t binary_map(const uint8_t current_state)
 {
 	uint32_t mapped_mask = 0;
 	if (current_state & 0x8) // 0b1000 A is on
-	{
 		mapped_mask |= 1u << STEP_MOTOR_A;
-	}
 	if (current_state & 0x4) // 0b0100 B is on
-	{
 		mapped_mask |= 1u << STEP_MOTOR_B;
-	}
 	if (current_state & 0x2) // 0b0010 C is on
-	{
 		mapped_mask |= 1u << STEP_MOTOR_C;
-	}
 	if (current_state & 0x1) // 0b0001 D is on
-	{
 		mapped_mask |= 1u << STEP_MOTOR_D;
-	}
 	// Return the combined mask
 	return mapped_mask;
 }
@@ -107,7 +99,7 @@ void calibrate(motor_state *motor_status, uint8_t direction)
 				total_steps += steps_per_rev;
 				steps_per_rev = 0;
 				revolutions++;
-				printf("steps: %u\n", total_steps);
+				printf("steps: %u\n", steps_per_rev);
 			}
 		}
 		prev_sensor_state = cur_sensor_state;

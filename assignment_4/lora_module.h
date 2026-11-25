@@ -12,6 +12,7 @@
 #define UART_BITRATE 9600
 #define UART_TIMEOUT 500000 // 500 ms
 #define BTN_DEBOUNCE_MS 100 // For btn debounce
+#define START_STR "DevEui, "
 #define AT_TEST_CMD "AT\r\n"
 #define AT_TEST_RETURN "+AT: OK"
 #define VERSION_CMD "AT+VER\r\n"

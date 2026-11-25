@@ -1,7 +1,6 @@
 #include "lora_module.h"
 #include "iuart.h"
 #include <ctype.h>
-#define START_POINT "DevEui, "
 
 // Reads characters through UART
 // Converts them to strings, reads string or timeout occurs
@@ -113,12 +112,12 @@ bool send_and_wait(int uart_nr, const char *cmd, const char *prefix, char *buf, 
 // Returns true if parsing was successfull, else false
 bool parse_deveui(const char *line, char *out)
 {
-	char *ptr_to_start = strstr(line, START_POINT);
-	int devui_start_point = strlen(START_POINT);
+	char *ptr_to_start = strstr(line, START_STR);
+	int devui_START_STR = strlen(START_STR);
 	int i = 0;
 	if (ptr_to_start != NULL)
 	{
-		ptr_to_start += devui_start_point;
+		ptr_to_start += devui_START_STR;
 		while (*ptr_to_start != '\0' && i < 16)
 		{
 			if (*ptr_to_start != ':')
