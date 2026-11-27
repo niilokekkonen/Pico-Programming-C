@@ -23,7 +23,7 @@ static const uint8_t half_step_arr[STEPS_IN_SEQ] = {
 
 // Moves the motor one half step
 // updates + returns updated sequence index
-uint32_t take_step(uint32_t seq_index, uint8_t direction)
+uint32_t take_step(uint8_t seq_index, uint8_t direction)
 {
 	uint8_t cur_state = half_step_arr[seq_index];
 	// Looping index, direction = 1 or 7, depending on direction

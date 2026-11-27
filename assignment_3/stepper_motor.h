@@ -54,7 +54,7 @@ typedef enum
 	EMPTY_INPUT
 } cmd_parse_res_t;
 
-uint32_t take_step(uint32_t seq_index, uint8_t direction);
+uint32_t take_step(uint8_t seq_index, uint8_t direction);
 uint32_t binary_map(uint8_t current_state);
 void check_status(const motor_state *motor_status);
 void calibrate(motor_state *motor_status, uint8_t direction);
